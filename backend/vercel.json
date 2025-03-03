@@ -1,0 +1,19 @@
+{
+    "version": 2,
+    "builds": [
+      {
+        "src": "api/**/*.js",
+        "use": "@vercel/node"
+      }
+    ],
+    "routes": [
+      {
+        "src": "/create-payment-intent",
+        "dest": "/api/create-payment-intent.js"
+      },
+      {
+        "src": "/(.*)",
+        "dest": "/api/$1.js"
+      }
+    ]
+}

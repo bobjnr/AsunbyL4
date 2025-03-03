@@ -178,78 +178,39 @@
 // });
 
 
-const express = require('express');
-const cors = require('cors');
-const stripe = require('stripe')('sk_test_51QpwWkI85GnQ3SeRay0Z0imHst70lXvM4JhPG9HrA5g5hQpvi03ATtdaBmC4NSX1wCO9lCcWtdYzjtjH9lI1caCg00eIckLBK7');
-const app = express();
-const PORT = process.env.PORT || 3000;
+// server.js
+// const express = require('express');
+// const cors = require('cors');
+// const stripe = require('stripe')('sk_test_51QpwWkI85GnQ3SeRay0Z0imHst70lXvM4JhPG9HrA5g5hQpvi03ATtdaBmC4NSX1wCO9lCcWtdYzjtjH9lI1caCg00eIckLBK7');
 
-// Middleware
-app.use(express.json());
-app.use(cors());
+// const app = express();
+// const port = process.env.PORT || 3000;
 
-// Create a payment intent
-app.post('/create-payment-intent', async (req, res) => {
-  try {
-    const { amount, currency = 'usd' } = req.body;
+// app.use(cors());
+// app.use(express.json());
+
+// app.post('/create-payment-intent', async (req, res) => {
+//   try {
+//     const { amount, currency = 'usd' } = req.body;
     
-    // Create a PaymentIntent with the order amount and currency
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Stripe expects amount in cents
-      currency,
-      automatic_payment_methods: {
-        enabled: true,
-      },
-    });
+//     // Create a PaymentIntent with the order amount and currency
+//     const paymentIntent = await stripe.paymentIntents.create({
+//       amount,
+//       currency,
+//       // Optional: Set up metadata, shipping, etc.
+//       // metadata: { orderId: 'someOrderId' }
+//     });
 
-    // Send publishable key and PaymentIntent details to client
-    res.send({
-      clientSecret: paymentIntent.client_secret,
-    });
-  } catch (error) {
-    res.status(400).send({
-      error: {
-        message: error.message,
-      }
-    });
-  }
-});
+//     // Send the client secret to the client
+//     res.status(200).json({
+//       clientSecret: paymentIntent.client_secret,
+//     });
+//   } catch (error) {
+//     console.error('Error creating payment intent:', error);
+//     res.status(500).json({ error: error.message });
+//   }
+// });
 
-// Listen for webhook events
-app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
-  const sig = req.headers['stripe-signature'];
-  const endpointSecret = 'whsec_YOUR_WEBHOOK_SECRET'; // You'll get this from the Stripe dashboard
-
-  let event;
-
-  try {
-    event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
-  } catch (err) {
-    res.status(400).send(`Webhook Error: ${err.message}`);
-    return;
-  }
-
-  // Handle the event
-  switch (event.type) {
-    case 'payment_intent.succeeded':
-      const paymentIntent = event.data.object;
-      console.log(`PaymentIntent for ${paymentIntent.amount} was successful!`);
-      // Update your database, fulfill the order, etc.
-      break;
-    default:
-      console.log(`Unhandled event type ${event.type}`);
-  }
-
-  // Return a 200 response to acknowledge receipt of the event
-  res.send();
-});
-
-app.get('/', (req, res) => {
-  res.send('Stripe payment server is running');
-});
-
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
-
-module.exports = app;
+// app.listen(port, () => {
+//   console.log(`Server running on port ${port}`);
+// });
