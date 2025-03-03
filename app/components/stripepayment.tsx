@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Alert, ActivityIndicator, Text } from 'react-native';
+import { View, StyleSheet, Alert, ActivityIndicator, Text, Platform } from 'react-native';
 import { CardField, useStripe, PaymentIntent } from '@stripe/stripe-react-native';
 import { PAYMENT_API_URL } from '../config/stripe';
 
@@ -9,6 +9,19 @@ interface StripePaymentProps {
   onError: (error: Error) => void;
   onCancel: () => void;
 }
+
+// Local development server URL - use your computer's IP address (not localhost)
+// Localhost doesn't work when testing on physical devices or most emulators
+// Replace 192.168.1.X with your actual local IP address
+const LOCAL_API_URL = 'http://192.168.253.171:3000/api/create-payment-intent';
+
+// Use the appropriate URL based on environment
+const getApiUrl = () => {
+  if (__DEV__) {
+    return LOCAL_API_URL; // Use local server during development
+  }
+  return PAYMENT_API_URL; // Use production URL in production
+};
 
 export default function StripePayment({ amount, onSuccess, onError, onCancel }: StripePaymentProps) {
   const { confirmPayment, createPaymentMethod } = useStripe();
@@ -22,21 +35,25 @@ export default function StripePayment({ amount, onSuccess, onError, onCancel }: 
     const fetchPaymentIntent = async () => {
       try {
         setLoading(true);
-        console.log(`Calling payment API at: ${PAYMENT_API_URL}`);
-        console.log(`Request payload: ${JSON.stringify({
+        
+        // Get appropriate API URL
+        const apiUrl = getApiUrl();
+        console.log(`Calling payment API at: ${apiUrl}`);
+        
+        // Prepare payload - correctly formatted amount
+        const payload = {
           amount: Math.round(amount * 100), 
           currency: 'usd',
-        })}`);
+        };
+        console.log(`Request payload:`, payload);
         
-        const response = await fetch(PAYMENT_API_URL, {
+        const response = await fetch(apiUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
           },
-          body: JSON.stringify({
-            amount: Math.round(amount * 100), 
-            currency: 'usd',
-          }),
+          body: JSON.stringify(payload),
         });
 
         // Log the status and headers
@@ -129,7 +146,7 @@ export default function StripePayment({ amount, onSuccess, onError, onCancel }: 
         )}
         <View style={styles.buttonContainer}>
           <Text style={styles.button} onPress={onCancel}>Cancel</Text>
-          <Text style={styles.button} onPress={() => window.location.reload()}>Retry</Text>
+          <Text style={styles.button} onPress={() => fetchPaymentIntent()}>Retry</Text>
         </View>
       </View>
     );

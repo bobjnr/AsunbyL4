@@ -2,6 +2,9 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 module.exports = async (req, res) => {
+  // Always set JSON content type
+  res.setHeader('Content-Type', 'application/json');
+  
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -10,27 +13,33 @@ module.exports = async (req, res) => {
 
   // Handle preflight OPTIONS request
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    return res.status(200).json({ status: 'ok' });
   }
   
-  // Only allow POST
+  // Provide JSON response even for method errors
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method not allowed', method: req.method });
   }
 
   try {
-    // Debug: Check if we have the secret key (redact most of it for security)
-    const hasKey = !!process.env.STRIPE_SECRET_KEY;
-    const keyPrefix = process.env.STRIPE_SECRET_KEY ? 
-      process.env.STRIPE_SECRET_KEY.substring(0, 7) + '...' : 
-      'undefined';
-    console.log(`Stripe key available: ${hasKey}, prefix: ${keyPrefix}`);
-    
+    // Check if Stripe key exists
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return res.status(500).json({ 
+        error: 'Stripe key is missing in environment variables'
+      });
+    }
+
+    // Make sure we have amount in the body
+    if (!req.body || req.body.amount === undefined) {
+      return res.status(400).json({ 
+        error: 'Missing required parameter: amount',
+        receivedBody: req.body 
+      });
+    }
+
     // Make sure the amount is an integer 
     const amount = Math.round(req.body.amount);
     const currency = req.body.currency || 'usd';
-    
-    console.log(`Creating payment intent for amount: ${amount} ${currency}`);
     
     // Create a payment intent
     const paymentIntent = await stripe.paymentIntents.create({
@@ -38,21 +47,16 @@ module.exports = async (req, res) => {
       currency
     });
     
-    console.log(`Payment intent created: ${paymentIntent.id}`);
-    
     // Return only the client secret
     return res.status(200).json({
       clientSecret: paymentIntent.client_secret
     });
   } catch (error) {
-    console.error('Error creating payment intent:', error);
-    
-    // Provide more detailed error information
+    // Always return JSON for errors
     return res.status(500).json({ 
       error: error.message,
-      type: error.type,
-      code: error.statusCode || 500,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      type: error.type || 'unknown',
+      code: error.statusCode || 500
     });
   }
 };
