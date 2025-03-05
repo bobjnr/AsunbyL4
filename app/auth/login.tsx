@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, Image } from 'react-native';
 import { useAuth } from './authContext';
 import { useRouter, useSegments } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { FirebaseError } from 'firebase/app';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
 import Toast from 'react-native-toast-message';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -12,56 +16,31 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, googleSignIn } = useAuth();
   const router = useRouter();
   const segments = useSegments();
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      setError('Please enter both email and password');
-      return;
-    }
+  // Set up Google Sign-In
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    androidClientId: '761122749502-m1t5qlm9d2llhr6g5ef36aa4srn7s33i.apps.googleusercontent.com',
+    iosClientId: '761122749502-b9g2kbue4tdcgrav2oplfsg6ma20gor3.apps.googleusercontent.com',
+    webClientId: '761122749502-a3pg46ph29liufscg82app271p91hiua.apps.googleusercontent.com',
+  });
 
-    setIsLoading(true);
-    try {
-      setError('');
-      await login({ email, password });
-      Toast.show({
-        type: 'success',
-        text1: 'Success',
-        text2: 'Logged in successfully',
-        position: 'top',
-        topOffset: 60
-      });
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const { authentication } = response;
+      googleSignIn(authentication?.accessToken);
       router.replace('/');
+    }
+  }, [response]);
+
+  const handleGoogleLogin = async () => {
+    try {
+      await promptAsync();
     } catch (error) {
-      if (error instanceof FirebaseError) {
-        switch (error.code) {
-          case 'auth/wrong-password':
-            setError('Incorrect password. Please try again.');
-            break;
-          case 'auth/user-not-found':
-            setError('No account found with this email.');
-            break;
-          case 'auth/invalid-email':
-            setError('Invalid email address.');
-            break;
-          case 'auth/invalid-credential':
-            setError('Invalid credentials. Please check your email and password.');
-            break;
-          default:
-            setError(error.message || 'Login failed. Please try again.');
-        }
-      } else if (error instanceof Error) {
-        // Handle the custom error for unverified email
-        if (error.message.includes('verify your email')) {
-          setError(error.message);
-        } else {
-          setError('An unexpected error occurred. Please try again.');
-        }
-      }
-    } finally {
-      setIsLoading(false);
+      console.error('Google login error:', error);
+      setError('Failed to login with Google. Please try again.');
     }
   };
 
@@ -81,65 +60,43 @@ export default function LoginScreen() {
       >
         <Ionicons name="arrow-back" size={24} color="#8B0000" />
       </TouchableOpacity>
-
+      
       <Text style={styles.title}>Login</Text>
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
-      
+
       <TextInput
         style={[styles.input, error ? styles.inputError : null]}
         placeholder="Email"
         value={email}
-        onChangeText={(text) => {
-          setEmail(text);
-          setError('');
-        }}
+        onChangeText={setEmail}
         keyboardType="email-address"
         autoCapitalize="none"
-        editable={!isLoading}
       />
-      
+
       <View style={styles.passwordContainer}>
         <TextInput
-          style={[
-            styles.input,
-            styles.passwordInput,
-            error ? styles.inputError : null
-          ]}
+          style={[styles.input, styles.passwordInput]}
           placeholder="Password"
           value={password}
-          onChangeText={(text) => {
-            setPassword(text);
-            setError('');
-          }}
+          onChangeText={setPassword}
           secureTextEntry={!showPassword}
-          editable={!isLoading}
         />
-        <TouchableOpacity 
-          style={styles.eyeIcon}
-          onPress={() => setShowPassword(!showPassword)}
-        >
-          <Ionicons 
-            name={showPassword ? "eye-off" : "eye"} 
-            size={24} 
-            color="#8B0000" 
-          />
+        <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowPassword(!showPassword)}>
+          <Ionicons name={showPassword ? "eye-off" : "eye"} size={24} color="#8B0000" />
         </TouchableOpacity>
       </View>
-      
-      <TouchableOpacity 
-        style={[styles.button, isLoading && styles.buttonDisabled]} 
-        onPress={handleLogin}
-        disabled={isLoading}
-      >
-        <Text style={styles.buttonText}>
-          {isLoading ? 'Logging in...' : 'Login'}
-        </Text>
+
+      <TouchableOpacity style={styles.button} onPress={() => login({ email, password })}>
+        <Text style={styles.buttonText}>Login</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.push('/auth/resetpassword')}>
-        <Text style={styles.linkText}>Forgot Password?</Text>
+      <TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin}>
+        <View style={styles.googleButtonContent}>
+          <Image source={{ uri: 'https://developers.google.com/identity/images/g-logo.png' }} style={styles.googleIcon} />
+          <Text style={styles.googleButtonText}>Sign in with Google</Text>
+        </View>
       </TouchableOpacity>
-      
+
       <TouchableOpacity onPress={() => router.push('/auth/signup')}>
         <Text style={styles.linkText}>Don't have an account? Sign up</Text>
       </TouchableOpacity>
@@ -214,5 +171,29 @@ const styles = StyleSheet.create({
     right: 12,
     top: 12,
     padding: 5,
+  },
+  googleButton: {
+    backgroundColor: 'white',
+    padding: 15,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  googleButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  googleIcon: {
+    width: 24,
+    height: 24,
+    marginRight: 10,
+  },
+  googleButtonText: {
+    color: '#757575',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

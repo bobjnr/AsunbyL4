@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1034262411934",
+    "project_id": "asunbyl4-fb95d",
+    "storage_bucket": "asunbyl4-fb95d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1034262411934:android:dcd05e328c719f132fd98f",
+        "android_client_info": {
+          "package_name": "com.bobjnr.AsunbyL4"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1034262411934-p4p9lfgvqp6e04g370eefj0ped3g68op.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyClwkorLzdZnYwjYSVKQNpnqnAtal0Wcxg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1034262411934-p4p9lfgvqp6e04g370eefj0ped3g68op.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

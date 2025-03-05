@@ -1,4 +1,8 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
+import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from 'expo-auth-session';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { AuthContextType, User, AuthCredentials, SignupData } from './types';
 import { authStorage } from './authStorage';
 import { initializeApp } from 'firebase/app';
@@ -30,6 +34,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+GoogleSignin.configure({
+  webClientId: '1034262411934-p4p9lfgvqp6e04g370eefj0ped3g68op.apps.googleusercontent.com',
+});
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -248,6 +256,89 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const googleSignIn = async () => {
+    try {
+      setIsLoading(true);
+      
+      // For Expo
+      if (Platform.OS === 'web') {
+        // Web workflow using Firebase directly
+        const provider = new GoogleAuthProvider();
+        const result = await signInWithPopup(auth, provider);
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        
+        // Handle user data similar to your existing login
+        const userDoc = await getDoc(doc(db, 'users', result.user.uid));
+        
+        if (!userDoc.exists()) {
+          // Create user document if first time sign in
+          await setDoc(doc(db, 'users', result.user.uid), {
+            email: result.user.email,
+            name: result.user.displayName,
+            emailVerified: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+        } else {
+          // Update last login time
+          await updateDoc(doc(db, 'users', result.user.uid), {
+            lastLoginAt: new Date().toISOString()
+          });
+        }
+      } else {
+        // For native
+        await GoogleSignin.hasPlayServices();
+        const { idToken } = await GoogleSignin.signIn();
+        
+        // Create a Google credential with the token
+        const credential = GoogleAuthProvider.credential(idToken);
+        
+        // Sign in with credential from the Google user
+        const userCredential = await signInWithCredential(auth, credential);
+        const { user: firebaseUser } = userCredential;
+        
+        // Check if user document exists
+        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+        
+        if (!userDoc.exists()) {
+          // Create user document if first time sign in
+          const userData = {
+            email: firebaseUser.email,
+            name: firebaseUser.displayName,
+            emailVerified: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          
+          await setDoc(doc(db, 'users', firebaseUser.uid), userData);
+        } else {
+          // Update last login time
+          await updateDoc(doc(db, 'users', firebaseUser.uid), {
+            lastLoginAt: new Date().toISOString()
+          });
+        }
+        
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: 'Logged in with Google successfully',
+          position: 'bottom'
+        });
+      }
+    } catch (error) {
+      console.error('Google sign-in error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to login with Google. Please try again.',
+        position: 'bottom'
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -258,7 +349,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       continueAsGuest ,
       updateUserData,
       resendVerificationEmail,
-      resetPassword
+      resetPassword,
+      googleSignIn
     }}>
       {children}
     </AuthContext.Provider>

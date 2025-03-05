@@ -33,4 +33,5 @@ export interface AuthContextType {
   updateUserData: (userData: Partial<User>) => Promise<void>;
   resendVerificationEmail: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  googleSignIn: () => Promise<void>;
 }

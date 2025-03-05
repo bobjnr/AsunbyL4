@@ -1,18 +1,38 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, Alert, Image } from 'react-native';
 import { useAuth } from './authContext';
 import { useRouter, useSegments } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
-  const { signup } = useAuth();
+  const { signup, googleSignIn } = useAuth();
   const router = useRouter();
   const segments = useSegments();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  // Set up Google Sign-In
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    androidClientId: '761122749502-m1t5qlm9d2llhr6g5ef36aa4srn7s33i.apps.googleusercontent.com',
+    iosClientId: '761122749502-b9g2kbue4tdcgrav2oplfsg6ma20gor3.apps.googleusercontent.com',
+    webClientId: '761122749502-a3pg46ph29liufscg82app271p91hiua.apps.googleusercontent.com',
+  });
+
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const { authentication } = response;
+      googleSignIn(authentication?.accessToken);
+      router.replace('/');
+    }
+  }, [response]);
 
   const handleBack = () => {
     if (segments.length > 1) {
@@ -62,6 +82,15 @@ export default function SignupScreen() {
     }
   };
 
+  const handleGoogleSignup = async () => {
+    try {
+      await promptAsync();
+    } catch (error) {
+      console.error('Google signup error:', error);
+      setError('Failed to sign up with Google. Please try again.');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <TouchableOpacity 
@@ -71,6 +100,7 @@ export default function SignupScreen() {
         <Ionicons name="arrow-back" size={24} color="#8B0000" />
       </TouchableOpacity>
       <Text style={styles.title}>Create Account</Text>
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
       <TextInput
         style={styles.input}
         placeholder="Full Name"
@@ -112,6 +142,22 @@ export default function SignupScreen() {
         <Text style={styles.buttonText}>
           {loading ? 'Creating Account...' : 'Sign Up'}
         </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity 
+        style={[styles.googleButton, loading && styles.buttonDisabled]} 
+        onPress={handleGoogleSignup}
+        disabled={loading}
+      >
+        <View style={styles.googleButtonContent}>
+          <Image 
+            source={{ uri: 'https://developers.google.com/identity/images/g-logo.png' }} 
+            style={styles.googleIcon} 
+          />
+          <Text style={styles.googleButtonText}>
+            {loading ? 'Signing up...' : 'Sign up with Google'}
+          </Text>
+        </View>
       </TouchableOpacity>
       <TouchableOpacity onPress={() => router.push('/auth/login')}>
         <Text style={styles.linkText}>Already have an account? Login</Text>
@@ -179,5 +225,34 @@ const styles = StyleSheet.create({
     right: 12,
     top: 12,
     padding: 5,
+  },
+  googleButton: {
+    backgroundColor: 'white',
+    padding: 15,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  googleButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  googleIcon: {
+    width: 24,
+    height: 24,
+    marginRight: 10,
+  },
+  googleButtonText: {
+    color: '#757575',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  errorText: {
+    color: '#ff0000',
+    marginBottom: 15,
+    textAlign: 'center',
   },
 });
