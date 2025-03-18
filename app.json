@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "googleServicesFile": "./GoogleService-Info.plist",
+      "googleServicesFile": "./app/GoogleService-Info.plist",
       "bundleIdentifier": "com.bobjnr.AsunbyL4"
     },
     "android": {
@@ -41,7 +41,12 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "@react-native-google-signin/google-signin"
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.1034262411934-kff7pgcm9naglmctonjvh6lqjjfufeef"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

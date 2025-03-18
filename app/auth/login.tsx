@@ -1,14 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, Image } from 'react-native';
 import { useAuth } from './authContext';
 import { useRouter, useSegments } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { FirebaseError } from 'firebase/app';
-import * as Google from 'expo-auth-session/providers/google';
-import * as WebBrowser from 'expo-web-browser';
 import Toast from 'react-native-toast-message';
-
-WebBrowser.maybeCompleteAuthSession();
+import { signInWithPopup } from 'firebase/auth';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -20,27 +16,16 @@ export default function LoginScreen() {
   const router = useRouter();
   const segments = useSegments();
 
-  // Set up Google Sign-In
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    androidClientId: '761122749502-m1t5qlm9d2llhr6g5ef36aa4srn7s33i.apps.googleusercontent.com',
-    iosClientId: '761122749502-b9g2kbue4tdcgrav2oplfsg6ma20gor3.apps.googleusercontent.com',
-    webClientId: '761122749502-a3pg46ph29liufscg82app271p91hiua.apps.googleusercontent.com',
-  });
-
-  useEffect(() => {
-    if (response?.type === 'success') {
-      const { authentication } = response;
-      googleSignIn(authentication?.accessToken);
-      router.replace('/');
-    }
-  }, [response]);
-
   const handleGoogleLogin = async () => {
     try {
-      await promptAsync();
+      setIsLoading(true);
+      await googleSignIn();
+      router.replace('/');
     } catch (error) {
       console.error('Google login error:', error);
       setError('Failed to login with Google. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -49,6 +34,23 @@ export default function LoginScreen() {
       router.back();
     } else {
       router.replace('/');
+    }
+  };
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await login({ email, password });
+      router.replace('/');
+    } catch (error) {
+      setError(error.message || 'Failed to login. Please check your credentials.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -86,14 +88,22 @@ export default function LoginScreen() {
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={() => login({ email, password })}>
-        <Text style={styles.buttonText}>Login</Text>
+      <TouchableOpacity 
+        style={[styles.button, isLoading && styles.buttonDisabled]} 
+        onPress={handleLogin}
+        disabled={isLoading}
+      >
+        <Text style={styles.buttonText}>{isLoading ? 'Logging in...' : 'Login'}</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin}>
+      <TouchableOpacity 
+        style={[styles.googleButton, isLoading && styles.buttonDisabled]} 
+        onPress={handleGoogleLogin}
+        disabled={isLoading}
+      >
         <View style={styles.googleButtonContent}>
           <Image source={{ uri: 'https://developers.google.com/identity/images/g-logo.png' }} style={styles.googleIcon} />
-          <Text style={styles.googleButtonText}>Sign in with Google</Text>
+          <Text style={styles.googleButtonText}>{isLoading ? 'Logging in...' : 'Sign in with Google'}</Text>
         </View>
       </TouchableOpacity>
 

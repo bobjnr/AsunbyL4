@@ -99,22 +99,22 @@ export default function AccountScreen() {
     {
       title: 'Orders',
       icon: 'receipt-outline',
-      onPress: () => router.push('/orders')
+      onPress: () => router.push({ pathname: '/order' })
     },
     {
       title: 'Payment Methods',
       icon: 'card-outline',
-      onPress: () => router.push('/payments')
+      onPress: () => router.push({ pathname: '/payments' })
     },
     {
       title: 'Addresses',
       icon: 'location-outline',
-      onPress: () => router.push('/addresses')
+      onPress: () => router.push({ pathname: '/addresses' })
     },
     {
       title: 'Notifications',
       icon: 'notifications-outline',
-      onPress: () => router.push('/notifications')
+      onPress: () => router.push({ pathname: '/notifications' })
     }
   ];
 

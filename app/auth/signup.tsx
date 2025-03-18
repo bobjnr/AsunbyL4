@@ -1,12 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform, Alert, Image } from 'react-native';
 import { useAuth } from './authContext';
 import { useRouter, useSegments } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import * as Google from 'expo-auth-session/providers/google';
-import * as WebBrowser from 'expo-web-browser';
-
-WebBrowser.maybeCompleteAuthSession();
+import { signInWithPopup } from 'firebase/auth';
 
 export default function SignupScreen() {
   const [email, setEmail] = useState('');
@@ -18,21 +15,6 @@ export default function SignupScreen() {
   const segments = useSegments();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  // Set up Google Sign-In
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    androidClientId: '761122749502-m1t5qlm9d2llhr6g5ef36aa4srn7s33i.apps.googleusercontent.com',
-    iosClientId: '761122749502-b9g2kbue4tdcgrav2oplfsg6ma20gor3.apps.googleusercontent.com',
-    webClientId: '761122749502-a3pg46ph29liufscg82app271p91hiua.apps.googleusercontent.com',
-  });
-
-  useEffect(() => {
-    if (response?.type === 'success') {
-      const { authentication } = response;
-      googleSignIn(authentication?.accessToken);
-      router.replace('/');
-    }
-  }, [response]);
 
   const handleBack = () => {
     if (segments.length > 1) {
@@ -84,10 +66,14 @@ export default function SignupScreen() {
 
   const handleGoogleSignup = async () => {
     try {
-      await promptAsync();
+      setLoading(true);
+      await googleSignIn();
+      router.replace('/');
     } catch (error) {
       console.error('Google signup error:', error);
       setError('Failed to sign up with Google. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
