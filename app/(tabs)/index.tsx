@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, View, Text, ScrollView, Image, TouchableOpacity, SafeAreaView, TextInput, Animated } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, Image, TouchableOpacity, TextInput, Animated, Platform } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, usePathname, useRouter } from 'expo-router';
 import { useState, useEffect, useRef } from 'react';
@@ -8,6 +9,8 @@ import { user } from '../auth/types';
 import { useAuth } from '../auth/authContext';
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
+
   const images = [
     require('../../assets/images/asun1.jpg'),
     require('../../assets/images/asunplatter.jpeg'),
@@ -19,7 +22,7 @@ export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState('home');
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const successMessageAnim = useRef(new Animated.Value(-100)).current;
-  
+
   const router = useRouter();
   const pathname = usePathname();
   const { getCartCount } = useCart();
@@ -61,7 +64,7 @@ export default function HomeScreen() {
 
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {showSuccessMessage && (
         <Animated.View 
           style={[
@@ -202,7 +205,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
         ))}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -210,7 +213,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingTop: 0,
   },
   headerContainer: {
     flexDirection: 'row',
@@ -383,6 +385,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#ddd',
     paddingVertical: 10,
     backgroundColor: 'white',
+    paddingBottom: Platform.OS === 'ios' ? 40 : 10,
   },
   navItem: {
     alignItems: 'center',
@@ -453,5 +456,4 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
-
 

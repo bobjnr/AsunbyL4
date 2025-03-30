@@ -324,12 +324,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       setLoadingMessage('Signing you out...');
-      // Sign out from Google
-      await GoogleSignin.signOut();
+      
+      // Try Google sign out only if user signed in with Google
+      try {
+        const isSignedIn = await GoogleSignin.isSignedIn();
+        if (isSignedIn) {
+          await GoogleSignin.signOut();
+        }
+      } catch (googleError) {
+        console.log('Google sign out error:', googleError);
+        // Continue with Firebase logout even if Google sign out fails
+      }
+  
       // Sign out from Firebase
       await signOut(auth);
       setUser(null); 
       await authStorage.removeUser();
+      
       Toast.show({
         type: 'success',
         text1: 'Success',
@@ -347,6 +358,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw error;
     } finally {
       setLoadingMessage('');
+      setIsLoading(false); // Make sure loading state is cleared
     }
   };
 

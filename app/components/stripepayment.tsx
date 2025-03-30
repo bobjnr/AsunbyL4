@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Alert, ActivityIndicator, Text, Platform } from 'react-native';
+import { View, StyleSheet, Alert, ActivityIndicator, Text, Platform, Modal, TouchableOpacity } from 'react-native';
 import { CardField, useStripe, PaymentIntent } from '@stripe/stripe-react-native';
 import { PAYMENT_API_URL } from '../config/stripe';
+import { Ionicons } from '@expo/vector-icons';
 
 interface StripePaymentProps {
   amount: number;
@@ -10,19 +11,6 @@ interface StripePaymentProps {
   onCancel: () => void;
 }
 
-// Local development server URL - use your computer's IP address (not localhost)
-// Localhost doesn't work when testing on physical devices or most emulators
-// Replace 192.168.1.X with your actual local IP address
-const LOCAL_API_URL = 'http://192.168.253.171:3000/api/create-payment-intent';
-
-// Use the appropriate URL based on environment
-const getApiUrl = () => {
-  if (__DEV__) {
-    return LOCAL_API_URL; // Use local server during development
-  }
-  return PAYMENT_API_URL; // Use production URL in production
-};
-
 export default function StripePayment({ amount, onSuccess, onError, onCancel }: StripePaymentProps) {
   const { confirmPayment, createPaymentMethod } = useStripe();
   const [loading, setLoading] = useState(false);
@@ -30,24 +18,20 @@ export default function StripePayment({ amount, onSuccess, onError, onCancel }: 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [responseDebug, setResponseDebug] = useState<string | null>(null);
 
-  // Create a payment intent when the component loads
   useEffect(() => {
     const fetchPaymentIntent = async () => {
       try {
         setLoading(true);
         
-        // Get appropriate API URL
-        const apiUrl = getApiUrl();
-        console.log(`Calling payment API at: ${apiUrl}`);
+        console.log(`Calling payment API at: ${PAYMENT_API_URL}`);
         
-        // Prepare payload - correctly formatted amount
         const payload = {
           amount: Math.round(amount * 100), 
           currency: 'usd',
         };
         console.log(`Request payload:`, payload);
         
-        const response = await fetch(apiUrl, {
+        const response = await fetch(PAYMENT_API_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -56,16 +40,13 @@ export default function StripePayment({ amount, onSuccess, onError, onCancel }: 
           body: JSON.stringify(payload),
         });
 
-        // Log the status and headers
         console.log('Response status:', response.status);
         console.log('Response headers:', JSON.stringify([...response.headers.entries()]));
 
-        // Debug the raw response
         const responseText = await response.text();
         console.log('Raw API response:', responseText);
         setResponseDebug(responseText);
         
-        // Only try to parse if we have a successful response
         if (response.ok) {
           try {
             const responseData = JSON.parse(responseText);
@@ -82,7 +63,6 @@ export default function StripePayment({ amount, onSuccess, onError, onCancel }: 
             onError(new Error(`Parse error: ${parseError.message}`));
           }
         } else {
-          // Handle non-200 responses better
           setErrorMessage(`API Error: ${response.status} - ${responseText.substring(0, 100)}...`);
           console.error('API error:', response.status, responseText);
           onError(new Error(`API error: ${response.status}`));
@@ -125,70 +105,114 @@ export default function StripePayment({ amount, onSuccess, onError, onCancel }: 
     }
   };
 
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#8B0000" />
-        <Text style={styles.loadingText}>Processing payment...</Text>
-      </View>
-    );
-  }
-
-  if (errorMessage) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>Error: {errorMessage}</Text>
-        {responseDebug && (
-          <View style={styles.debugContainer}>
-            <Text style={styles.debugTitle}>Server Response:</Text>
-            <Text style={styles.debugText}>{responseDebug.substring(0, 300)}...</Text>
+  return (
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={true}
+      onRequestClose={onCancel}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={onCancel}>
+              <Ionicons name="close" size={24} color="#000" />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Payment Details</Text>
+            <View style={{ width: 24 }} />
           </View>
-        )}
-        <View style={styles.buttonContainer}>
-          <Text style={styles.button} onPress={onCancel}>Cancel</Text>
-          <Text style={styles.button} onPress={() => fetchPaymentIntent()}>Retry</Text>
+
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#8B0000" />
+              <Text style={styles.loadingText}>Processing payment...</Text>
+            </View>
+          ) : errorMessage ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>Error: {errorMessage}</Text>
+              {responseDebug && (
+                <View style={styles.debugContainer}>
+                  <Text style={styles.debugTitle}>Server Response:</Text>
+                  <Text style={styles.debugText}>{responseDebug.substring(0, 300)}...</Text>
+                </View>
+              )}
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity style={styles.button} onPress={onCancel}>
+                  <Text style={styles.buttonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.button} onPress={() => fetchPaymentIntent()}>
+                  <Text style={styles.buttonText}>Retry</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.paymentContainer}>
+              <Text style={styles.amount}>Amount: ${(amount).toFixed(2)}</Text>
+              <CardField
+                postalCodeEnabled={true}
+                placeholder={{
+                  number: '4242 4242 4242 4242',
+                }}
+                cardStyle={styles.card}
+                style={styles.cardContainer}
+                onCardChange={(cardDetails) => {
+                  if (cardDetails.complete) {
+                    handlePayment();
+                  }
+                }}
+              />
+            </View>
+          )}
         </View>
       </View>
-    );
-  }
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Enter Card Details</Text>
-      <CardField
-        postalCodeEnabled={true}
-        placeholder={{
-          number: '4242 4242 4242 4242',
-        }}
-        cardStyle={styles.card}
-        style={styles.cardContainer}
-        onCardChange={(cardDetails) => {
-          if (cardDetails.complete) {
-            handlePayment();
-          }
-        }}
-      />
-      <Text style={styles.cancelText} onPress={onCancel}>Cancel</Text>
-    </View>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  modalOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  loadingContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
-    backgroundColor: 'white',
   },
-  title: {
-    fontSize: 18,
+  errorContainer: {
+    padding: 20,
+  },
+  paymentContainer: {
+    padding: 20,
+  },
+  amount: {
+    fontSize: 24,
     fontWeight: 'bold',
+    textAlign: 'center',
     marginBottom: 20,
+    color: '#8B0000',
   },
   cardContainer: {
     height: 50,
-    width: '100%',
     marginVertical: 30,
   },
   card: {
@@ -200,6 +224,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     fontSize: 16,
+    color: '#666',
   },
   errorText: {
     color: 'red',
@@ -211,7 +236,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
     padding: 10,
     borderRadius: 8,
-    width: '100%',
     marginBottom: 20,
   },
   debugTitle: {
@@ -225,19 +249,17 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    width: '100%',
   },
   button: {
-    padding: 10,
     backgroundColor: '#8B0000',
-    color: 'white',
-    borderRadius: 5,
-    textAlign: 'center',
+    padding: 15,
+    borderRadius: 8,
     width: '40%',
   },
-  cancelText: {
-    marginTop: 20,
-    color: '#8B0000',
+  buttonText: {
+    color: 'white',
+    textAlign: 'center',
     fontSize: 16,
-  },
+    fontWeight: 'bold',
+  }
 });

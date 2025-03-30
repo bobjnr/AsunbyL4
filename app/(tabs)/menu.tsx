@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Image, SafeAreaView } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Image, Platform } from 'react-native';
 import { Link, useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useEffect } from 'react';
@@ -69,7 +69,7 @@ export default function MenuScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Menu</Text>
       </View>
@@ -133,7 +133,7 @@ export default function MenuScreen() {
           </TouchableOpacity>
         ))}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -141,6 +141,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    paddingTop: Platform.OS === 'android' ? 0 : 0,
   },
   header: {
     backgroundColor: '#8B0000',
@@ -195,6 +196,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#ddd',
     paddingVertical: 10,
     backgroundColor: 'white',
+    paddingBottom: Platform.OS === 'ios' ? 40 : 10,
   },
   navItem: {
     alignItems: 'center',

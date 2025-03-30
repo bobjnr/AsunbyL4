@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, SafeAreaView, TextInput } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Platform, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, usePathname } from 'expo-router';
 import { Stack } from 'expo-router';
@@ -120,7 +120,7 @@ export default function AccountScreen() {
 
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {user ? (
         <>
           <View style={styles.header}>
@@ -298,7 +298,7 @@ export default function AccountScreen() {
       ) : (
         null
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -434,6 +434,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#ddd',
     paddingVertical: 10,
     backgroundColor: 'white',
+    paddingBottom: Platform.OS === 'ios' ? 40 : 10,
   },
   navItem: {
     alignItems: 'center',

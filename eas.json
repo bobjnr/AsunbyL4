@@ -15,7 +15,9 @@
         "gradleCommand": ":app:assembleRelease"
       },
       "ios": {
-        "buildConfiguration": "Release"
+        "buildConfiguration": "Release",
+        "resourceClass": "m-medium",
+        "distribution": "internal"
       }
     },
     "production": {

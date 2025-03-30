@@ -5,6 +5,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { View, Platform } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 import { CartProvider } from './menu/cartcontext';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -41,52 +42,58 @@ export default function RootLayout() {
     <AuthProvider>
       <CartProvider>
         <StripeProviderWrapper>
-          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <Stack 
-              screenOptions={{
-                headerShown: false,
-                // Incorporating relevant tab configuration
-                contentStyle: Platform.select({
-                  ios: {
-                    // Preserve iOS-specific styling if needed
-                    backgroundColor: Colors[colorScheme ?? 'light'].background,
-                  },
-                  default: {
-                    backgroundColor: Colors[colorScheme ?? 'light'].background,
-                  },
-                }),
-              }}
-            >
-              <Stack.Screen 
-                name="onboarding"
-                options={{ 
-                  animation: 'fade',
-                }} 
-              />
-              <Stack.Screen 
-                name="(tabs)" 
-                options={{ 
-                  animation: 'none',
-                }} 
-              />
-              <Stack.Screen 
-                name="auth/login" 
-                options={{ 
-                  animation: 'slide_from_right',
+          <SafeAreaProvider>
+            <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+              <Stack 
+                screenOptions={{
                   headerShown: false,
-                }} 
+                  // Incorporating relevant tab configuration
+                  contentStyle: Platform.select({
+                    ios: {
+                      // Preserve iOS-specific styling if needed
+                      backgroundColor: Colors[colorScheme ?? 'light'].background,
+                    },
+                    default: {
+                      backgroundColor: Colors[colorScheme ?? 'light'].background,
+                    },
+                  }),
+                }}
+              >
+                <Stack.Screen 
+                  name="onboarding"
+                  options={{ 
+                    animation: 'fade',
+                  }} 
+                />
+                <Stack.Screen 
+                  name="(tabs)" 
+                  options={{ 
+                    animation: 'none',
+                  }} 
+                />
+                <Stack.Screen 
+                  name="auth/login" 
+                  options={{ 
+                    animation: 'slide_from_right',
+                    headerShown: false,
+                  }} 
+                />
+                <Stack.Screen 
+                  name="auth/signup" 
+                  options={{ 
+                    animation: 'slide_from_right',
+                    headerShown: false,
+                  }} 
+                />
+                <Stack.Screen name="+not-found" />
+              </Stack>
+              <StatusBar 
+                style={colorScheme === 'dark' ? 'light' : 'dark'} 
+                backgroundColor="transparent"
+                translucent={Platform.OS === 'android'}
               />
-              <Stack.Screen 
-                name="auth/signup" 
-                options={{ 
-                  animation: 'slide_from_right',
-                  headerShown: false,
-                }} 
-              />
-              <Stack.Screen name="+not-found" />
-            </Stack>
-            <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-          </ThemeProvider>
+            </ThemeProvider>
+          </SafeAreaProvider>
           <Toast />
         </StripeProviderWrapper>
       </CartProvider>

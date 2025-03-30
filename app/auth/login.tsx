@@ -69,6 +69,7 @@ export default function LoginScreen() {
       <TextInput
         style={[styles.input, error ? styles.inputError : null]}
         placeholder="Email"
+        placeholderTextColor="#999"
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
@@ -79,6 +80,7 @@ export default function LoginScreen() {
         <TextInput
           style={[styles.input, styles.passwordInput]}
           placeholder="Password"
+          placeholderTextColor="#999"
           value={password}
           onChangeText={setPassword}
           secureTextEntry={!showPassword}
@@ -140,6 +142,7 @@ const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 15,
     borderRadius: 5,
+    color: '#000',
   },
   inputError: {
     borderColor: '#ff0000',

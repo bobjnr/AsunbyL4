@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Alert, ScrollView, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Alert, ScrollView, Modal } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import StripePayment from '../components/stripepayment';
@@ -211,7 +211,7 @@ const PaymentConfirmation = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {showStripePayment && (
         <StripePayment
           amount={orderDetails?.total || 0}
@@ -312,7 +312,7 @@ const PaymentConfirmation = () => {
         onSelect={handlePaymentMethodSelect}
         currentMethod={selectedPayment}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -322,6 +322,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    paddingTop: Platform.OS === 'android' ? 0 : 0,
   },
   header: {
     flexDirection: 'row',

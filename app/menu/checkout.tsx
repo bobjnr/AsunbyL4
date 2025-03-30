@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Image } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Platform, TextInput, Image } from 'react-native';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { useCart } from './cartcontext';
@@ -88,7 +88,7 @@ export default function Checkout() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
@@ -144,12 +144,14 @@ export default function Checkout() {
           <TextInput
             style={styles.input}
             placeholder="Full Name"
+            placeholderTextColor="#999"
             value={form.name}
             onChangeText={(text) => setForm({ ...form, name: text })}
           />
           <TextInput
             style={styles.input}
             placeholder="Email"
+            placeholderTextColor="#999"
             keyboardType="email-address"
             value={form.email}
             onChangeText={(text) => setForm({ ...form, email: text })}
@@ -157,6 +159,7 @@ export default function Checkout() {
           <TextInput
             style={styles.input}
             placeholder="Phone"
+            placeholderTextColor="#999"
             keyboardType="phone-pad"
             value={form.phone}
             onChangeText={(text) => setForm({ ...form, phone: text })}
@@ -164,6 +167,7 @@ export default function Checkout() {
           <TextInput
             style={[styles.input, styles.addressInput]}
             placeholder="Delivery Address"
+            placeholderTextColor="#999"
             multiline
             numberOfLines={3}
             value={form.address}
@@ -195,15 +199,17 @@ export default function Checkout() {
         </TouchableOpacity>
             ))}
         </View>
-
-        <TouchableOpacity 
-          style={styles.submitButton}
-          onPress={handleSubmit}
-        >
-          <Text style={styles.submitText}>Place Order</Text>
-        </TouchableOpacity>
+        
+        <View style={styles.orderButton}>
+          <TouchableOpacity 
+            style={styles.submitButton}
+            onPress={handleSubmit}
+          >
+            <Text style={styles.submitText}>Place Order</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -211,6 +217,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    paddingTop: Platform.OS === 'android' ? 0 : 0,
   },
   header: {
     flexDirection: 'row',
@@ -306,6 +313,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 15,
     fontSize: 16,
+    color: '#000',
   },
   addressInput: {
     height: 100,
@@ -339,7 +347,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 25,
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 30, 
   },
   submitText: {
     color: 'white',
@@ -348,6 +356,9 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     width: 24,
+  },
+  orderButton: {
+    paddingBottom: Platform.OS === 'ios' ? 40 : 10,
   },
   backButton: {
     padding: 5,
